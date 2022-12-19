@@ -1,40 +1,6 @@
-const { response } = require("express");
-const express = require("express");
-const fetch = require("node-fetch");
-require('dotenv').config();
-const { readFile } = require("fs/promises");
 
-const app = express()
 
-const PORT = process.env.PORT || 3000;
-
-app.set("view engine", "ejs");
-app.use(express.static("puplic"));
-
-app.use(express.urlencoded({
-    extented : true
-}))
-
-app.use(express.json())
-
-app.get("/", (req, res) => {
-    res.render("index")
-})
-
-app.post("/upload-file", (req, res) => {
-    path = req.body.filePath.replace(/\\/g, "/");
-    console.log(path);
-
-    const fileContent = readFile(path, 'utf-8', (error, data) => {
-        console.log(data);
-    });
-    
-    const url_list = null;
-
-    return res.render("index", );
-})
-
-app.post("/convert-mp3", async (req, res) => {
+array.forEach(Input => {
     var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
     var match = req.body.videoID.match(regExp);
     const videoID = (match&&match[7].length==11)? match[7] : false
@@ -50,7 +16,7 @@ app.post("/convert-mp3", async (req, res) => {
         console.log("Started convert-func")
         const axios = require("axios");
         
-
+    
         const options = {
         method: 'GET',
         url: `https://youtube-mp36.p.rapidapi.com/dl?id=${videoID}`,
@@ -67,9 +33,5 @@ app.post("/convert-mp3", async (req, res) => {
         }).catch(function (error) {
             return res.render("index", {success : false, message : error});
         });
-    }
-})
-
-app.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
-})
+    }    
+});

@@ -148,7 +148,7 @@
 </head>
 <body>
     <div class="top-container">
-        <form action="/convert-mp3" method="POST" class="form">
+        <form action="/convert-mp3" method="POST" id="form">
             <h1>Youtube 2 MP3 Converter</h1>
             <h4>Enter video ID</h4>
             <div>
@@ -156,7 +156,9 @@
                 id="convert-btn">Convert</button>
             </div>
         </form>
-        <form action="/upload-file" method="POST" class="form">
+    </div>
+    <div>
+        <form action="/upload-file">
             <h4>or upload file</h4>
             <div>
                 <input type="text" name="filePath" placeholder="filePath"><button 
