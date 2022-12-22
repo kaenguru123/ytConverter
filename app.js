@@ -3,10 +3,17 @@ const express = require("express");
 const fetch = require("node-fetch");
 require('dotenv').config();
 const axios = require("axios");
+const request = require('request');
 const fs = require('fs');
 
-function makeToList(text){
-    return 
+function downloadMP3(url, destDir, title, i) {
+    // path = "C:\\Users\\Startklar\\Desktop\\musik\\Genres\\" + title + ".mp3";
+    path = `C:\\Users\\Startklar\\Downloads\\${destDir}\\${title}.mp3`;
+    request(url)
+    .pipe(fs.createWriteStream(path))
+    .on('close', () => {
+    console.log(`File ${title} has been downloaded. ${i}`);
+  });
 }
 
 function getYtId(input){
@@ -15,46 +22,31 @@ function getYtId(input){
     return (match&&match[7].length==11)? match[7] : false
 }
 
-function getAxiosOption(vIDOrUrl, onlyId = true){
-    console.log("inside option generation")
-    if (onlyId) {
-        return {
-            method: 'GET',
-            url: `https://youtube-mp36.p.rapidapi.com/dl?id=${vIDOrUrl}`,
-            headers: {
-                'X-RapidAPI-Key': process.env.API_KEY,
-                'X-RapidAPI-Host': process.env.API_HOST
-            }};
+function getAxiosOption(vIDOrUrl){
+    return {
+        method: 'GET',
+        url: `https://youtube-mp36.p.rapidapi.com/dl?id=${vIDOrUrl}`,
+        headers: {
+            'X-RapidAPI-Key': process.env.API_KEY,
+            'X-RapidAPI-Host': process.env.API_HOST
         }
-    else {
-        return {
-            method: 'GET',
-            url: `${vIDOrUrl}`,
-            // headers: {
-            //     'X-RapidAPI-Key': process.env.API_KEY,
-            //     'X-RapidAPI-Host': process.env.API_HOST
-            // }
-        };
-    } 
+    };
 }
 
 function makeAxiosReqest(res, options){
-    axios.request(options).then(function (response) {
-        return res.render("index", {success : true, song_title: response.data.title, 
-            song_link : response.data.link});
-        }).catch(function (error) {
+    axios.request(options)
+        .then(function (response) {
+            return res.render("index", {success : true, song_title: response.data.title, song_link : response.data.link});
+        })
+        .catch(function (error) {
             return res.render("index", {success : false, message : error});
         });
 }
 
-function makeAxiosReqestAndDownload(res, options){
+function makeAxiosReqestAndDownload(options, destDir, iteration){
     axios.request(options).then(function (response) {
-        options = getAxiosOption(response.data.link, onlyId = false);
-        console.log("make download request" + response.data.link)
-        axios.request(options);
-        }).catch(function (error) {
-            return res.render("index", {success : false, message : error});
-        });
+        downloadMP3(response.data.link, destDir, response.data.title, iteration);
+        })
 }
 
 const app = express()
@@ -75,39 +67,35 @@ app.get("/", (req, res) => {
 })
 
 app.post("/upload-file", (req, res) => {
-    path = req.body.filePath.replace(/\\/g, "/");
-    console.log(path);
+    destinationDirectiory = req.body.destinationDirectory;
 
-    let content = null;
-
-    (() => {
-        const data = fs.promises.readFile(path, 'utf8');
+    (async () => {
+        const data = await fs.promises.readFile("C:\\Users\\Startklar\\Documents\\Git_Repos\\ytConverter\\urls.txt", 'utf8');
         console.log(data)
-        content = data.body.split('\r\n');;
+        if (data == null){ return; }
 
-        for (let i = 0; i < content.length; ++i){
-            const url = content[i];
-            console.log(url + `loop ${i}`)
-            const ID = getYtId(url);
-            const options = getAxiosOption(ID);
-            console.log("make api request")
-            makeAxiosReqestAndDownload(res, options);
+        const content = data.split('\r\n');
+        console.log(content)
+        try{
+            for (let i = 0; i < content.length; ++i){
+                const url = content[i];
+                console.log(url + `loop ${i}`)
+                const ID = getYtId(url);
+                const options = getAxiosOption(ID);
+                console.log("make api request") 
+                makeAxiosReqestAndDownload(options, destinationDirectiory, i)
+            }
+            return res.render("index", {success : true, message: "Finished Downloading", song_title: "test", song_link : "teset"});
         }
-        // content.forEach(url => {
-        //     console.log(url + `loop ${cnt}`)
-        //     cnt = cnt + 1
-        //     const ID = getYtId(url);
-        //     const options = getAxiosOption(ID);
-        //     console.log("make api request")
-        //     makeAxiosReqestAndDownload(res, options);
-        // });
+        catch{
+            return res.render("index", {success : false, message: "Error in download loop"});
+        }
       })();
-    return res.render("index", );
 })
 
 app.post("/convert-mp3", async (req, res) => {
     const videoID = getYtId(req.body.videoID)
-    
+    console.log(videoID)
     if (videoID === "undefined" ||
         videoID === "" ||
         videoID === null)
@@ -117,6 +105,7 @@ app.post("/convert-mp3", async (req, res) => {
     else
     {   
         const options = getAxiosOption(videoID)
+        console.log(options)
         return makeAxiosReqest(res, options)
     }
 })
